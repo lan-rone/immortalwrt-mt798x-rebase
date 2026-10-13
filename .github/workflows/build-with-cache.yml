@@ -47,6 +47,11 @@ jobs:
           echo "上游无更新，跳过编译"
           exit 0
 
+      - name: Clone ImmortalWrt source
+        if: steps.check.outputs.need_build == 'true'
+        run: |
+          git clone https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git openwrt -b 25.12
+          
       - name: Cache OpenWrt dl source
         if: steps.check.outputs.need_build == 'true'
         uses: actions/cache@v4
@@ -63,7 +68,7 @@ jobs:
           echo "start_time=$START_TIME" >> $GITHUB_ENV
           
           # 克隆 chasey-dev 25.12 仓库源码
-          git clone https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git openwrt -b 25.12
+          #git clone https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git openwrt -b 25.12
           cd openwrt
           
           # 更新 feeds
