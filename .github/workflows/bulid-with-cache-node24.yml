@@ -1,0 +1,86 @@
+name: Auto ImmortalWrt 25.12 for RAX3000M
+
+# 并发控制：防止多次同时编译，只保留最新一次
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      - name: Check upstream updates
+        id: check
+        run: |
+          UPSTREAM_COMMIT=$(git ls-remote --heads https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git 25.12 | awk '{print $1}')
+          echo "UPSTREAM_COMMIT=${UPSTREAM_COMMIT}" >> $GITHUB_OUTPUT
+          # 对比本地记录的上游commit，判断是否需要编译
+          if [ -f .upstream_commit ]; then
+            LOCAL_COMMIT=$(cat .upstream_commit)
+          else
+            LOCAL_COMMIT=""
+          fi
+          if [ "${UPSTREAM_COMMIT}" != "${LOCAL_COMMIT}" ]; then
+            echo "need_build=true" >> $GITHUB_OUTPUT
+            echo "${UPSTREAM_COMMIT}" > .upstream_commit
+          else
+            echo "need_build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Cache build dir
+        uses: actions/cache@v5
+        if: steps.check.outputs.need_build == 'true'
+        with:
+          path: |
+            feeds
+            build_dir
+            staging_dir
+            .ccache
+          key: ${{ runner.os }}-immortalwrt-${{ github.sha }}
+
+      - name: Compile ImmortalWrt
+        if: steps.check.outputs.need_build == 'true'
+        run: |
+          # 这里放你原来的编译脚本 sh/op.sh
+          chmod +x sh/op.sh
+          ./sh/op.sh
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
+        if: steps.check.outputs.need_build == 'true'
+        with:
+          name: firmware-${{ steps.date.outputs.date }}-${{ github.run_number }}
+          path: bin/targets/**/*.bin
+
+      - name: Create Release and Upload Assets
+        if: steps.check.outputs.need_build == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "RAX3000M 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
+          tag_name: "build-${{ steps.date.outputs.date }}-${{ github.run_number }}"
+          body: |
+            ## 自动编译固件
+            
+            - 编译时间：${{ steps.date.outputs.date }}
+            - 编译编号：#${{ github.run_number }}
+            - 设备：CMCC RAX3000M (eMMC / NAND)
+            - 内核：6.12（25.12 版本）
+            - 包含插件：磁盘管理、Argon 主题等
+            - 上游：chasey-dev/immortalwrt-mt798x-rebase
+          files: |
+            bin/targets/**/*.bin
