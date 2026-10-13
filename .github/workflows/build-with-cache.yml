@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -54,7 +54,7 @@ jobs:
           
       - name: Cache OpenWrt dl source
         if: steps.check.outputs.need_build == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: openwrt/dl
           key: ${{ runner.os }}-immortalwrt-dl-${{ hashFiles('defconfig/rax3000m-noopenclash.config') }}
@@ -103,7 +103,7 @@ jobs:
 
       - name: Upload firmware
         if: steps.check.outputs.need_build == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: immortalwrt-25.12-rax3000m-firmware
           path: openwrt/bin/targets/mediatek/filogic/
@@ -111,7 +111,7 @@ jobs:
 
       - name: Create Release and Upload Assets
         if: steps.check.outputs.need_build == 'true'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: "RAX3000M 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
           tag_name: "build-${{ steps.date.outputs.date }}-${{ github.run_number }}"
