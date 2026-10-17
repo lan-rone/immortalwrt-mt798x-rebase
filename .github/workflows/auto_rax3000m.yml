@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload firmware
         if: steps.check.outputs.need_build == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: immortalwrt-25.12-rax3000m-firmware
           path: openwrt/bin/targets/mediatek/filogic/
@@ -83,7 +83,7 @@ jobs:
 
       - name: Create Release and Upload Assets
         if: steps.check.outputs.need_build == 'true'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: "RAX3000M 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
           tag_name: "build-${{ steps.date.outputs.date }}-${{ github.run_number }}"
